@@ -48,7 +48,10 @@ service = Service()
 plugins = PluginManager()
 
 ## create all tables needed by auth if not custom tables
+auth.settings.extra_fields['auth_user']= [Field('phone')]
 auth.define_tables(username=False, signature=False)
+
+db.auth_user.phone.requires = IS_MATCH('^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$', error_message='Not a valid phone number. Please enter (xxx)-xxx-xxxx')
 
 ## configure email
 mail = auth.settings.mailer

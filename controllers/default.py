@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
-# this file is released under public domain and you can use without limitations
+# Nguyen Do - 1357775 - shanedo@ucsc.edu
+# CMPS 183 - HW1
 
 #########################################################################
-## This is a sample controller
+## This is a controller for online fleamarket
+##
 ## - index is the default action of any application
 ## - user is required for authentication and authorization
 ## - download is for downloading files uploaded in the db (does streaming)
-## - api is an example of Hypermedia API support and access control
 #########################################################################
 
-def index():
-    """
+"""def index():
+    
     This index appears when you go to bboard/default/index . 
-    """
+
     # We want to generate an index of the posts. 
     posts = db().select(db.bboard.ALL)
     return dict(posts=posts)
-
+"""
 @auth.requires_login()
 def add():
     """Add a post."""
@@ -32,12 +33,22 @@ def view():
     """View a post."""
     # p = db(db.bboard.id == request.args(0)).select().first()
     p = db.bboard(request.args(0)) or redirect(URL('default', 'index'))
+    title=p.title
+    db.bboard.title.readable = False
+
+    if not p.is_sold:
+        # If the record is ours, we can edit/delete it. If not, view only
+        b = IMG(_src=URL('static/images','sale.png'))
+    else:
+        b = IMG(_src=URL('static/images','sold.png'))
+
+
     form = SQLFORM(db.bboard, record=p, readonly=True)
     has_image = False
     if p.filename != None:
         has_image = True
     # p.name would contain the name of the poster.
-    return dict(form=form,image=p.filename,has_image=has_image)
+    return dict(form=form,image=p.filename,has_image=has_image,title=title,is_sold_icon=b)
 
 @auth.requires_login()
 def edit():
@@ -59,13 +70,15 @@ def edit():
 def delete():
     """Deletes a post."""
     p = db.bboard(request.args(0)) or redirect(URL('default', 'index'))
+    print 'hi'
     if p.user_id != auth.user_id:
         session.flash = T('Not authorized.')
         redirect(URL('default', 'index'))
     db(db.bboard.id == p.id).delete()
     redirect(URL('default', 'index'))
+    session.flash = T('Deleted')
     
-def index2():
+def index():
     """Better index."""
     # Let's get all data. 
     q = db.bboard
@@ -77,7 +90,15 @@ def index2():
         #b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
         if (auth.user_id == row.user_id and row.user_id != None):
             b = A('Edit', _class='btn', _href=URL('default', 'edit', args=[row.id]))
-            b += A('Delete', _class='btn', _href=URL('default', 'delete', args=[row.id]))
+            b += A('Delete', _class='btn', _href=URL('default', 'delete', user_signature=True, args=[row.id]))
+        return b
+
+    def is_sold(row):
+        # If the record is ours, we can edit/delete it. If not, view only
+        b = IMG(_src=URL('static/images','sale.png'))
+        if row.is_sold:
+            b = IMG(_src=URL('static/images','sold.png'))
+
         return b
     
     def shorten_post(row):
@@ -92,6 +113,7 @@ def index2():
     if len(request.args) == 0:
         # We are in the main index.
         links.insert(0, (dict(header='Message', body = shorten_post)))
+        links.insert(1, (dict(header='Status', body = is_sold)))
         db.bboard.bbmessage.readable = False
 
     if request.args(0):
@@ -99,12 +121,13 @@ def index2():
     
     form = SQLFORM.grid(q,
         fields=[db.bboard.title, db.bboard.user_id, db.bboard.date_posted, 
-                db.bboard.category,  
-                db.bboard.bbmessage],
+                db.bboard.category, db.bboard.price, 
+                db.bboard.bbmessage, db.bboard.is_sold],
         editable=False, deletable=False, details=False, create=False,
         links=links,
         paginate=10,
-        exportclasses=dict(xml=False, html=False, csv_with_hidden_cols=False, csv=False, tsv_with_hidden_cols=False, tsv=False, json=False),
+        exportclasses=dict(xml=False, html=False, csv_with_hidden_cols=False, csv=False, 
+                           tsv_with_hidden_cols=False, tsv=False, json=False),
         )
     return dict(form=form)
 

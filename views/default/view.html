@@ -2,10 +2,10 @@
 {{extend 'layout.html'}}
 
 <p>
-{{=A('Back', _class='btn', _href=URL('index2'))}}
+{{=A('Back', _class='btn', _href=URL('index'))}}
 </p>
 
-<h1>Post</h1>
+<h1>{{=is_sold_icon}}{{=title}}</h1>
 
 {{=form}}
 {{
@@ -17,5 +17,5 @@ pass
 
 <p>
 <br>
-{{=A('Back', _class='btn', _href=URL('index2'))}}
+{{=A('Back', _class='btn', _href=URL('index'))}}
 </p>
