@@ -20,6 +20,7 @@ def index():
 @auth.requires_login()
 def add():
     """Add a post."""
+    db.bboard.is_sold.readable = False
     form = SQLFORM(db.bboard)
     if form.process().accepted:
         # Successful processing.
@@ -32,9 +33,11 @@ def view():
     # p = db(db.bboard.id == request.args(0)).select().first()
     p = db.bboard(request.args(0)) or redirect(URL('default', 'index'))
     form = SQLFORM(db.bboard, record=p, readonly=True)
-    imageURL = p.filename
+    has_image = False
+    if p.filename != None:
+        has_image = True
     # p.name would contain the name of the poster.
-    return dict(form=form,image=imageURL)
+    return dict(form=form,image=p.filename,has_image=has_image)
 
 @auth.requires_login()
 def edit():
@@ -66,31 +69,19 @@ def index2():
     """Better index."""
     # Let's get all data. 
     q = db.bboard
+    db.bboard.is_sold.readable = False
     
     def generate_buttons(row):
-        # If the record is ours, we can delete it.
+        # If the record is ours, we can edit/delete it. If not, view only
         b = ''
-        b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
-        if auth.user_id == row.user_id:
-            b += A('Edit', _class='btn', _href=URL('default', 'edit', args=[row.id]))
+        #b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
+        if (auth.user_id == row.user_id and row.user_id != None):
+            b = A('Edit', _class='btn', _href=URL('default', 'edit', args=[row.id]))
             b += A('Delete', _class='btn', _href=URL('default', 'delete', args=[row.id]))
         return b
     
-    def generate_edit_button(row):
-        # If the record is ours, we can edit it.
-        b = ''
-        if auth.user_id == row.user_id:
-            b = A('Edit', _class='btn', _href=URL('default', 'edit', args=[row.id]))
-        return b
-
-    def generate_view_button(row):
-        # We can view every post.
-        b = ''
-        b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
-        return b
-    
     def shorten_post(row):
-        return row.bbmessage[:10] + '...'
+        return A(row.bbmessage[:10]+'...', _class='', _href=URL('default', 'view', args=[row.id])) 
     
     # Creates extra buttons.
     
@@ -100,17 +91,20 @@ def index2():
 
     if len(request.args) == 0:
         # We are in the main index.
-        links.insert(0, (dict(header='Post', body = shorten_post)))
+        links.insert(0, (dict(header='Message', body = shorten_post)))
         db.bboard.bbmessage.readable = False
+
+    if request.args(0):
+        db.bboard.is_sold.readable = False
     
     form = SQLFORM.grid(q,
         fields=[db.bboard.title, db.bboard.user_id, db.bboard.date_posted, 
                 db.bboard.category,  
                 db.bboard.bbmessage],
-        editable=False, deletable=False, details=False,
+        editable=False, deletable=False, details=False, create=False,
         links=links,
         paginate=10,
-        exportclasses=dict(header ='',xml=False, html=False, csv_with_hidden_cols=False, csv=False, tsv_with_hidden_cols=False, tsv=False, json=False),
+        exportclasses=dict(xml=False, html=False, csv_with_hidden_cols=False, csv=False, tsv_with_hidden_cols=False, tsv=False, json=False),
         )
     return dict(form=form)
 

@@ -8,9 +8,14 @@
 <h1>Post</h1>
 
 {{=form}}
-
- <img width="200px" src="{{=URL('download', args=image)}}" />
+{{
+if has_image:
+	=A(IMG(_src=URL('download', args=image), _width="200px"), _href=URL('download', args=image), _target="blank")
+	pass
+pass
+}}
 
 <p>
+<br>
 {{=A('Back', _class='btn', _href=URL('index2'))}}
 </p>
