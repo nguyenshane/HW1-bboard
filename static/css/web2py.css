@@ -326,3 +326,7 @@ li.w2p_grid_breadcrumb_elem {
 .page-header {text-align: center;}
 .sub-header {text-align: center; }
 .w2p_export_menu {display: none;}
+.web2py_console {margin: auto; text-align: center;}
+.add_post {text-align: left; width:420px; margin: auto;}
+.web2py_counter {margin: initial; width: initial; float: initial; text-align: right;}
+.form-control {margin: 5px 0 0 -7px !important;}

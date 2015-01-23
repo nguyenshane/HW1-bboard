@@ -35,6 +35,7 @@ def view():
     p = db.bboard(request.args(0)) or redirect(URL('default', 'index'))
     title=p.title
     db.bboard.title.readable = False
+    db.bboard.is_sold.readable = False
 
     if not p.is_sold:
         # If the record is ours, we can edit/delete it. If not, view only
@@ -89,8 +90,9 @@ def index():
         b = ''
         #b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
         if (auth.user_id == row.user_id and row.user_id != None):
-            b = A('Edit', _class='btn', _href=URL('default', 'edit', args=[row.id]))
-            b += A('Delete', _class='btn', _href=URL('default', 'delete', user_signature=True, args=[row.id]))
+            b = A('Edit', _class='btn btn-warning', _href=URL('default', 'edit', args=[row.id]))
+            b += ' '
+            b += A('Delete', _class='btn btn-danger', _href=URL('default', 'delete', user_signature=True, args=[row.id]))
         return b
 
     def is_sold(row):

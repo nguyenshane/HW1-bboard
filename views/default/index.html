@@ -6,10 +6,10 @@ if auth.user == None:
     =DIV('Please  ',A('login', _class='', _href=URL('default', 'user/login')),' to add a new post.')
 	pass    
 else:
-	=A('Add a post', _class='btn', _href=URL('default', 'add'))
+	=DIV(A('Add a post', _class='btn btn-primary btn-lg btn-block', _href=URL('default', 'add')), _class='add_post')
 	pass
 =form
 }}
 
 
-{{=response.toolbar()}}
+{{#=response.toolbar()}}
