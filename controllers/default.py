@@ -71,35 +71,48 @@ def edit():
 def delete():
     """Deletes a post."""
     p = db.bboard(request.args(0)) or redirect(URL('default', 'index'))
-    print 'hi'
+
     if p.user_id != auth.user_id:
         session.flash = T('Not authorized.')
         redirect(URL('default', 'index'))
-    db(db.bboard.id == p.id).delete()
-    redirect(URL('default', 'index'))
+
+    form = FORM.confirm('Yes', {'No':URL('default', 'index')})
+    title = p.title
+    if form.accepted:
+        db(db.bboard.id == p.id).delete()
+        redirect(URL('default', 'index'))
+    return dict(form=form,title=title)
     session.flash = T('Deleted')
     
 def index():
     """Better index."""
     # Let's get all data. 
-    q = db.bboard
+    show_all = request.args(0) == 'all'
+    print show_all
+    #q = db.bboard
+    q = (db.bboard) if show_all else (db.bboard.is_sold == False)
     db.bboard.is_sold.readable = False
+
+    if show_all:
+        button = A('See unsold', _class='btn', _href=URL('default', 'index'))
+    else:
+        button = A('See all', _class='btn', _href=URL('default', 'index', args=['all']))
     
     def generate_buttons(row):
         # If the record is ours, we can edit/delete it. If not, view only
         b = ''
         #b = A('View', _class='btn', _href=URL('default', 'view', args=[row.id]))
         if (auth.user_id == row.user_id and row.user_id != None):
-            b = A('Edit', _class='btn btn-warning', _href=URL('default', 'edit', args=[row.id]))
+            b = A('Edit', _class='btn btn-warning', _href=URL('default', 'edit', user_signature=True, args=[row.id]))
             b += ' '
             b += A('Delete', _class='btn btn-danger', _href=URL('default', 'delete', user_signature=True, args=[row.id]))
         return b
 
     def is_sold(row):
         # If the record is ours, we can edit/delete it. If not, view only
-        b = IMG(_src=URL('static/images','sale.png'))
+        b = IMG(_src=URL('static/images','sale.png'), user_signature=True)
         if row.is_sold:
-            b = IMG(_src=URL('static/images','sold.png'))
+            b = IMG(_src=URL('static/images','sold.png'), user_signature=True)
 
         return b
     
@@ -112,26 +125,29 @@ def index():
         dict(header='', body = generate_buttons),
         ]
 
-    if len(request.args) == 0:
+    if len(request.args) == 0 or 1:
         # We are in the main index.
         links.insert(0, (dict(header='Message', body = shorten_post)))
-        links.insert(1, (dict(header='Status', body = is_sold)))
+        links.insert(1, (dict(header=(button), body = is_sold)))
         db.bboard.bbmessage.readable = False
 
-    if request.args(0):
-        db.bboard.is_sold.readable = False
+    #if request.args(0) == 'add':
+    #    db.bboard.is_sold.readable = False
     
-    form = SQLFORM.grid(q,
+    start_idx = 1 if show_all else 0
+
+    form = SQLFORM.grid(q, 
         fields=[db.bboard.title, db.bboard.user_id, db.bboard.date_posted, 
                 db.bboard.category, db.bboard.price, 
                 db.bboard.bbmessage, db.bboard.is_sold],
-        editable=False, deletable=False, details=False, create=False,
+        editable=False, deletable=False, details=False, create=False, 
         links=links,
         paginate=10,
         exportclasses=dict(xml=False, html=False, csv_with_hidden_cols=False, csv=False, 
                            tsv_with_hidden_cols=False, tsv=False, json=False),
+        args=request.args[:start_idx],
         )
-    return dict(form=form)
+    return dict(form=form,toggle_show_all=button)
 
 def user():
     """
